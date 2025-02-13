@@ -130,7 +130,14 @@ class GerundInfinitiveGame {
         };
       }
 
-      const isCorrect = answer === currentQuestion.correctAnswer;
+      // For "Verb + Gerund OR Infinitive" rule, always mark as correct
+      const isCorrect = currentQuestion.rule === "Verb + Gerund OR Infinitive" ? true : 
+                       answer === currentQuestion.correctAnswer;
+
+      console.log('Rule:', currentQuestion.rule); // Debug log
+      console.log('Answer given:', answer); // Debug log
+      console.log('Is OR rule:', currentQuestion.rule === "Verb + Gerund OR Infinitive"); // Debug log
+      console.log('Is correct:', isCorrect); // Debug log
       
       if (isCorrect) {
         this.score += 1;
@@ -143,12 +150,16 @@ class GerundInfinitiveGame {
         `**${currentQuestion.correctAnswer}**`
       );
 
-      return {
-        isCorrect,
-        feedback: isCorrect 
+      let feedback;
+      if (currentQuestion.rule === "Verb + Gerund OR Infinitive") {
+        feedback = `✅ Both forms are correct for this verb!\n\n${sentenceWithBold}\n\n**Rule:** ${currentQuestion.rule}`;
+      } else {
+        feedback = isCorrect 
           ? `✅ ${sentenceWithBold}\n\n**Rule:** ${currentQuestion.rule}` 
-          : `❌ ${sentenceWithBold}\n\n**Rule:** ${currentQuestion.rule}`
-      };
+          : `❌ ${sentenceWithBold}\n\n**Rule:** ${currentQuestion.rule}`;
+      }
+
+      return { isCorrect, feedback };
     } catch (error) {
       console.error('Error in checkAnswer:', error);
       return {
