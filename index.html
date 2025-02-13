@@ -208,7 +208,7 @@
         #next-button {
             padding: 10px 20px;
             margin-top: 15px;
-            background-color: #2ecc71 !important;
+            background-color: #2ecc71;
             color: white;
             border: none;
             border-radius: 5px;
@@ -219,11 +219,45 @@
         }
 
         #next-button:hover {
-            background-color: #27ae60 !important;
+            background-color: #27ae60;
         }
 
         #next-button:active {
-            background-color: #219a52 !important;
+            background-color: #219a52;
+        }
+
+        .menu-button {
+            padding: 12px 24px;
+            margin-top: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .menu-button:hover {
+            background-color: #2980b9;
+        }
+
+        #end-screen {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+        }
+
+        .end-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #final-score {
+            margin-bottom: 20px;
+            font-size: 1.5em;
         }
     </style>
 </head>
@@ -280,6 +314,15 @@
         <button id="quit-button" onclick="window.gameManager.quitGame()" class="hidden">Quit Game</button>
 
         <button id="next-button" class="hidden" onclick="window.gameManager.showNextQuestion()">Next Question →</button>
+    </div>
+
+    <div id="end-screen" style="display: none;">
+        <div class="end-content">
+            <h2 id="final-score"></h2>
+            <button onclick="window.gameManager.returnToMenu()" class="menu-button">
+                Return to Menu
+            </button>
+        </div>
     </div>
 
     <script src="game.js"></script>
@@ -369,22 +412,41 @@
                 feedbackElement.classList.remove('hidden', 'correct', 'incorrect');
                 feedbackElement.classList.add(result.isCorrect ? 'correct' : 'incorrect');
 
+                // Disable answer buttons and show next button
                 const buttons = document.querySelectorAll('.buttons button');
                 buttons.forEach(button => button.disabled = true);
+
+                // Check for game over in challenge mode
+                if (this.gameMode === 'challenge' && !result.isCorrect) {
+                    nextButton.classList.add('hidden'); // Hide next button
+                    setTimeout(() => {
+                        this.endGame(`Game Over! You got ${this.currentQuestion.currentScore} questions correct!`);
+                    }, 3000);
+                    return;
+                }
+
                 nextButton.classList.remove('hidden');
 
+                // Store next question data
                 this.nextQuestion = this.game.getNextQuestion();
                 
+                // Clear any existing timeout
                 if (this.feedbackTimeout) {
                     clearTimeout(this.feedbackTimeout);
                 }
 
+                // Still keep auto-advance as fallback
                 this.feedbackTimeout = setTimeout(() => {
                     this.showNextQuestion();
                 }, 8000);
             },
 
             showNextQuestion: function() {
+                // Don't proceed if game is over in challenge mode
+                if (this.gameMode === 'challenge' && document.getElementById('end-screen').style.display === 'block') {
+                    return;
+                }
+
                 if (this.feedbackTimeout) {
                     clearTimeout(this.feedbackTimeout);
                 }
@@ -397,7 +459,7 @@
                 
                 buttons.forEach(button => button.disabled = false);
 
-                if (this.nextQuestion.gameOver && this.gameMode !== 'endless') {
+                if (this.nextQuestion.gameOver) {
                     this.endGame(`Game Over! Final score: ${this.nextQuestion.finalScore}/${this.nextQuestion.totalQuestions}`);
                 } else {
                     this.currentQuestion = this.nextQuestion;
@@ -423,9 +485,28 @@
             },
 
             endGame: function(message) {
-                if (this.timer) clearInterval(this.timer);
-                alert(message);
-                this.quitGame();
+                // Clear any pending timeouts
+                if (this.feedbackTimeout) {
+                    clearTimeout(this.feedbackTimeout);
+                }
+                if (this.timer) {
+                    clearInterval(this.timer);
+                }
+
+                // Hide other screens
+                document.getElementById('game-screen').style.display = 'none';
+                document.getElementById('menu-screen').style.display = 'none';
+                
+                // Show end screen and update message
+                const endScreen = document.getElementById('end-screen');
+                const finalScore = document.getElementById('final-score');
+                
+                endScreen.style.display = 'block';
+                finalScore.textContent = message;
+
+                // Reset game state
+                this.gameMode = null;
+                this.currentQuestion = null;
             },
 
             quitGame: function() {
@@ -433,6 +514,27 @@
                 document.getElementById('game-screen').style.display = 'none';
                 document.getElementById('menu-screen').style.display = 'block';
                 document.getElementById('timer').classList.add('hidden');
+            },
+
+            // Add new method for returning to menu
+            returnToMenu: function() {
+                // Hide end screen
+                document.getElementById('end-screen').style.display = 'none';
+                
+                // Show menu screen
+                document.getElementById('menu-screen').style.display = 'block';
+                
+                // Reset game state
+                this.game = new GerundInfinitiveGame();
+                this.game.loadQuestions();
+                
+                // Hide timer if it was showing
+                document.getElementById('timer').classList.add('hidden');
+                
+                // Reset other states
+                this.currentQuestion = null;
+                this.gameMode = null;
+                this.timer = null;
             }
         };
 
